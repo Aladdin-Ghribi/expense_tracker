@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/add_expense_screen.dart';
 
 void main() {
@@ -26,6 +27,39 @@ class ExpenseListScreen extends StatefulWidget {
 
 class _ExpenseListScreenState extends State<ExpenseListScreen> {
   List<Map<String, dynamic>> _expenses = [];
+
+@override
+void initState(){
+  super.initState();
+  _loadExpenses();
+}
+
+
+Future<void> _loadExpenses() async {
+    final prefs = await SharedPreferences.getInstance();
+    final expenseStrings = prefs.getStringList('expenses') ?? [];
+    setState(() {
+      _expenses = expenseStrings.map((expense) {
+        final parts = expense.split('|');
+        return {
+          'title': parts[0],
+          'amount': double.parse(parts[1]),
+        };
+      }).toList();
+    });
+  }
+
+  Future<void> _saveExpenses() async {
+    final prefs = await SharedPreferences.getInstance();
+    final expenseStrings = _expenses.map((expense) {
+      return "${expense['title']}|${expense['amount']}";
+    }).toList();
+    await prefs.setStringList('expenses', expenseStrings);
+  }
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +89,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
               _expenses.add(newExpense);
               debugPrint("Added expense: ${newExpense['title']} - \$${newExpense['amount']}");
             });
+            _saveExpenses();
+
           }
         },
         child: Icon(Icons.add),
